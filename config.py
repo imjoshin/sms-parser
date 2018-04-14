@@ -1,11 +1,19 @@
+# Google sheets
 SHEET = "1iYKly1fCOEnR6QTgDwezQuDVaMe6TxN8RPklIzq91uE"
 WORKSHEET_SENT = "sent"
 WORKSHEET_REC = "received"
 
 OUTPUT_FOLDER = "output"
-
+OUTPUT_COUNT_TXT = True
+OUTPUT_WORDCLOUD = False
 MIN_TEXTS_TO_PROCESS = 50
 
+# word cloud
+WC_HEIGHT = 600
+WC_WIDTH = 800
+WC_BGCOLOR = "white"
+
+# word filtering
 MIN_WORD_LENGTH = 3
 IGNORED_WORDS = [
     "the", "at", "there", "some", "my",

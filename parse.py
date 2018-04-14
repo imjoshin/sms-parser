@@ -21,7 +21,8 @@ def main():
 
     for number in conversations:
         if len(conversations[number]['sent']) + len(conversations[number]['received']) > config.MIN_TEXTS_TO_PROCESS:
-            print("Processing conversation for '%s' (%s)" % (conversations[number]['name'], number))
+            name = "'%s' (%s)" % (conversations[number]['name'], number) if conversations[number]['name'] != "" else "'%s'" % (number)
+            print(name)
             processConversation(conversations[number])
 
 def getConversations(sent, rec):
@@ -69,14 +70,20 @@ def processConversation(conversation):
     dir = "%s/%s" % (config.OUTPUT_FOLDER, conversation['name'] if conversation['name'] != '' else conversation['number'])
 
     # write counts to files
+    print("\tCounting words...")
     sent, received, total = countWords(conversation)
-    writeKeyValuePairsToFile(sent, "%s/sent.txt" % (dir))
-    writeKeyValuePairsToFile(received, "%s/received.txt" % (dir))
-    writeKeyValuePairsToFile(total, "%s/total.txt" % (dir))
 
-    generateWordCloud(sent, "%s/sent.jpg" % (dir))
-    generateWordCloud(received, "%s/received.jpg" % (dir))
-    generateWordCloud(total, "%s/total.jpg" % (dir))
+    if config.OUTPUT_COUNT_TXT:
+        print("\tGenerating count txt...")
+        writeKeyValuePairsToFile(sent, "%s/sent.txt" % (dir))
+        writeKeyValuePairsToFile(received, "%s/received.txt" % (dir))
+        writeKeyValuePairsToFile(total, "%s/total.txt" % (dir))
+
+    if config.OUTPUT_WORDCLOUD:
+        print("\tGenerating wordclouds...")
+        generateWordCloud(sent, "%s/sent.jpg" % (dir))
+        generateWordCloud(received, "%s/received.jpg" % (dir))
+        generateWordCloud(total, "%s/total.jpg" % (dir))
 
 def countWords(conversation):
     allWords = {}
@@ -127,13 +134,12 @@ def generateWordCloud(list, file):
     random.shuffle(textList)
 
     wordcloud = WordCloud(
-        width=800,
-        height=600,
-        background_color="white"
+        width=config.WC_WIDTH,
+        height=config.WC_HEIGHT,
+        background_color=config.WC_BGCOLOR
     )
     wordcloud.generate(' '.join(textList))
     wordcloud.to_file(file)
-
 
 def writeKeyValuePairsToFile(list, file):
     if not os.path.exists(os.path.dirname(file)):
