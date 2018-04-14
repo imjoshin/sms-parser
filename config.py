@@ -3,10 +3,11 @@ SHEET = "1iYKly1fCOEnR6QTgDwezQuDVaMe6TxN8RPklIzq91uE"
 WORKSHEET_SENT = "sent"
 WORKSHEET_REC = "received"
 
+# output
 OUTPUT_FOLDER = "output"
-OUTPUT_COUNT_TXT = True
-OUTPUT_WORDCLOUD = False
-MIN_TEXTS_TO_PROCESS = 50
+OUTPUT_COUNT_CSV = True
+OUTPUT_WORDCLOUD = True
+OUTPUT_SENTIMENT_CSV = True
 
 # word cloud
 WC_HEIGHT = 600
@@ -37,3 +38,9 @@ IGNORED_WORDS = [
     "they", "can", "these", "could", "may",
     "I", "said", "so", "people", "part"
 ]
+
+# sentiment analysis
+SA_GRANULARITY = "hour" # hour or day
+
+# other settings
+MIN_TEXTS_TO_PROCESS = 100
