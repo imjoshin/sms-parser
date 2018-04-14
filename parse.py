@@ -1,5 +1,6 @@
 import config
-import gspread, re, operator, os, errno
+import gspread, re, operator, os, errno, random
+from wordcloud import WordCloud
 from oauth2client.service_account import ServiceAccountCredentials
 
 def main():
@@ -65,7 +66,17 @@ def getConversations(sent, rec):
     return ret
 
 def processConversation(conversation):
-    countWords(conversation)
+    dir = "%s/%s" % (config.OUTPUT_FOLDER, conversation['name'] if conversation['name'] != '' else conversation['number'])
+
+    # write counts to files
+    sent, received, total = countWords(conversation)
+    writeKeyValuePairsToFile(sent, "%s/sent.txt" % (dir))
+    writeKeyValuePairsToFile(received, "%s/received.txt" % (dir))
+    writeKeyValuePairsToFile(total, "%s/total.txt" % (dir))
+
+    generateWordCloud(sent, "%s/sent.jpg" % (dir))
+    generateWordCloud(received, "%s/received.jpg" % (dir))
+    generateWordCloud(total, "%s/total.jpg" % (dir))
 
 def countWords(conversation):
     allWords = {}
@@ -107,12 +118,24 @@ def countWords(conversation):
     received = extractSortedKeyFromDict('received', allWords)
     total = extractSortedKeyFromDict('total', allWords)
 
-    dir = "%s/%s" % (config.OUTPUT_FOLDER, conversation['name'] if conversation['name'] != '' else conversation['number'])
-    writeDictToFile(sent, "%s/sent.txt" % (dir))
-    writeDictToFile(received, "%s/received.txt" % (dir))
-    writeDictToFile(total, "%s/total.txt" % (dir))
+    return sent, received, total
 
-def writeDictToFile(dictionary, file):
+def generateWordCloud(list, file):
+    textList = []
+    for word in list:
+        textList += [word[0]] * word[1]
+    random.shuffle(textList)
+
+    wordcloud = WordCloud(
+        width=800,
+        height=600,
+        background_color="white"
+    )
+    wordcloud.generate(' '.join(textList))
+    wordcloud.to_file(file)
+
+
+def writeKeyValuePairsToFile(list, file):
     if not os.path.exists(os.path.dirname(file)):
         try:
             os.makedirs(os.path.dirname(file))
@@ -121,7 +144,7 @@ def writeDictToFile(dictionary, file):
                 raise
 
     with open(file, "w") as f:
-        for word in dictionary:
+        for word in list:
             f.write("%s: %s\n" % (str(word[0]), str(word[1])))
 
 def extractSortedKeyFromDict(key, dictionary):
