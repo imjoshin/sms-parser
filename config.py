@@ -1,0 +1,3 @@
+SHEET = "1iYKly1fCOEnR6QTgDwezQuDVaMe6TxN8RPklIzq91uE"
+WORKSHEET_SENT = "sent"
+WORKSHEET_REC = "received"
