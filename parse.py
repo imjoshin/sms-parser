@@ -1,5 +1,5 @@
 import config
-import gspread, re
+import gspread, re, operator, os, errno
 from oauth2client.service_account import ServiceAccountCredentials
 
 def main():
@@ -16,13 +16,14 @@ def main():
     sent = [dict(zip(sentHeaders, wsSent[row])) for row in range (1, len(wsSent))]
     rec = [dict(zip(recHeaders, wsRec[row])) for row in range (1, len(wsRec))]
 
-    conversations = separate(sent, rec)
+    conversations = getConversations(sent, rec)
 
     for number in conversations:
-        print("Processing conversation for '%s'" % (number))
-        processConversation(conversations[number])
+        if len(conversations[number]['sent']) + len(conversations[number]['received']) > config.MIN_TEXTS_TO_PROCESS:
+            print("Processing conversation for '%s' (%s)" % (conversations[number]['name'], number))
+            processConversation(conversations[number])
 
-def separate(sent, rec):
+def getConversations(sent, rec):
     ret = {}
 
     for text in sent:
@@ -36,9 +37,12 @@ def separate(sent, rec):
             ret[text['number']] = {
                 'sent': [],
                 'received': [],
+                'name': '',
+                'number': text['number'],
             }
 
         ret[text['number']]['sent'].append(text)
+        ret[text['number']]['name'] = text['name']
 
     for text in rec:
         if len(text['number']) is 11 and text['number'][:1] == "1":
@@ -51,32 +55,82 @@ def separate(sent, rec):
             ret[text['number']] = {
                 'sent': [],
                 'received': [],
+                'name': '',
+                'number': text['number'],
             }
 
         ret[text['number']]['received'].append(text)
+        ret[text['number']]['name'] = text['name']
 
     return ret
 
 def processConversation(conversation):
-    sentWords = {}
+    countWords(conversation)
+
+def countWords(conversation):
+    allWords = {}
     for sent in conversation['sent']:
         words = sent['text'].split()
         for word in words:
             word = re.sub("[^a-zA-Z]+", "", word).lower()
-            if len(word) is 0 or word in config.COMMON_WORDS[20:]:
+            if len(word) < config.MIN_WORD_LENGTH or word in config.IGNORED_WORDS or word[:4] == "http":
                 continue
 
-            if word not in sentWords:
-                sentWords[word] = 0
+            if word not in allWords:
+                allWords[word] = {
+                    'sent': 0,
+                    'received': 0,
+                    'total': 0,
+                }
 
-            sentWords[word] += 1
+            allWords[word]['sent'] += 1
+            allWords[word]['total'] += 1
 
-    count = 0
-    for key, value in sorted(sentWords.iteritems(), key=lambda (k,v): (v,k), reverse=True):
-        if count > 10:
-            break
-        print "%s: %s" % (key, value)
-        count += 1
+    for rec in conversation['received']:
+        words = rec['text'].split()
+        for word in words:
+            word = re.sub("[^a-zA-Z]+", "", word).lower()
+            if len(word) < config.MIN_WORD_LENGTH or word in config.IGNORED_WORDS or word[:4] == "http":
+                continue
+
+            if word not in allWords:
+                allWords[word] = {
+                    'sent': 0,
+                    'received': 0,
+                    'total': 0,
+                }
+
+            allWords[word]['received'] += 1
+            allWords[word]['total'] += 1
+
+    sent = extractSortedKeyFromDict('sent', allWords)
+    received = extractSortedKeyFromDict('received', allWords)
+    total = extractSortedKeyFromDict('total', allWords)
+
+    dir = "%s/%s" % (config.OUTPUT_FOLDER, conversation['name'] if conversation['name'] != '' else conversation['number'])
+    writeDictToFile(sent, "%s/sent.txt" % (dir))
+    writeDictToFile(received, "%s/received.txt" % (dir))
+    writeDictToFile(total, "%s/total.txt" % (dir))
+
+def writeDictToFile(dictionary, file):
+    if not os.path.exists(os.path.dirname(file)):
+        try:
+            os.makedirs(os.path.dirname(file))
+        except OSError as exc:
+            if exc.errno != errno.EEXIST:
+                raise
+
+    with open(file, "w") as f:
+        for word in dictionary:
+            f.write("%s: %s\n" % (str(word[0]), str(word[1])))
+
+def extractSortedKeyFromDict(key, dictionary):
+    extract = {}
+    for k in dictionary:
+        if dictionary[k][key] > 0:
+            extract[k] = dictionary[k][key]
+
+    return sorted(extract.items(), key=lambda x:x[1], reverse=True)
 
 if __name__ == "__main__":
 	main()

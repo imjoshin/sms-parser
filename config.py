@@ -2,8 +2,12 @@ SHEET = "1iYKly1fCOEnR6QTgDwezQuDVaMe6TxN8RPklIzq91uE"
 WORKSHEET_SENT = "sent"
 WORKSHEET_REC = "received"
 
-IGNORED_WORDS = 50
-COMMON_WORDS = [
+OUTPUT_FOLDER = "output"
+
+MIN_TEXTS_TO_PROCESS = 50
+
+MIN_WORD_LENGTH = 3
+IGNORED_WORDS = [
     "the", "at", "there", "some", "my",
     "of", "be", "use", "her", "than",
     "and", "this", "an", "would", "first",
